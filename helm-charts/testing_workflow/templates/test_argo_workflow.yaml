@@ -33,7 +33,7 @@ spec:
         value: "{{ .Values.repo_owner }}"
       - name: BUILD_NUMBER
         value: "{{ .Values.build_number }}"
-      image: docker.io/raddaoui/raddaoui-cicd:1.0
+      image: docker.io/raddaoui/raddaoui-cicd:latest
       volumeMounts:
       - mountPath: /mnt/test-data-volume
         name: argo-test-volume
@@ -44,7 +44,7 @@ spec:
       - -c
       - "pip install -r requirements.txt && python testapp.py"
       - 2>&1
-      image: docker.io/raddaoui/raddaoui-cicd:1.0
+      image: docker.io/raddaoui/raddaoui-cicd:latest
       volumeMounts:
       - mountPath: /mnt/test-data-volume
         name: argo-test-volume
@@ -56,5 +56,5 @@ spec:
           template: clean
   - name: clean
     container:
-      image: docker.io/raddaoui/raddaoui-cicd:1.0
+      image: docker.io/raddaoui/raddaoui-cicd:latest
       command: ["bash", "-c", "echo 'cleaning resources'"]

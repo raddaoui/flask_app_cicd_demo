@@ -25,7 +25,7 @@ class FlaskHelloWorldTests(unittest.TestCase):
         # on the specified path
         result = self.app.get('/') 
         # assert the response data
-        self.assertIn("Hello World", result.data)
+        self.assertIn("Hello", result.data)
 
 if __name__ == "__main__":
     unittest.main()

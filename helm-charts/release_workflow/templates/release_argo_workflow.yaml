@@ -37,30 +37,53 @@ spec:
         value: "{{ .Values.repo_owner }}"
       - name: BUILD_NUMBER
         value: "{{ .Values.build_number }}"
-      image: docker.io/raddaoui/raddaoui-cicd:latest
+      image: docker.io/raddaoui/raddaoui-cicd:5.0
       volumeMounts:
       - mountPath: /mnt/test-data-volume
         name: argo-test-volume
     name: checkout
   - container:
       command:
-      - /bin/bash
+      - sh
       - -c
-      - 'sha=`git log -n 1 --pretty=format:"%H"` && docker build . -t docker.io/raddaoui/flask-app:$sha && docker push docker.io/raddaoui/flask-app:$sha'
+      - "sha=`git log -n 1 --pretty=format:'%H'` && until docker ps; do sleep 3; done && docker login --username $docker_username --password $docker_password && docker build . -t docker.io/raddaoui/flask-app:$sha && docker push docker.io/raddaoui/flask-app:$sha"
       - 2>&1
-      image: docker.io/raddaoui/raddaoui-cicd:latest
+      image: docker.io/raddaoui/raddaoui-cicd:5.0
       volumeMounts:
       - mountPath: /mnt/test-data-volume
         name: argo-test-volume
       workingDir: /mnt/test-data-volume/src/{{ .Values.repo_owner }}/{{ .Values.repo_name }}
+      env:
+      - name: DOCKER_HOST
+        value: 127.0.0.1
+      - name: docker_username
+        valueFrom:
+          secretKeyRef:
+            name: docker-creds
+            key: username
+      - name: docker_password
+        valueFrom:
+          secretKeyRef:
+            name: docker-creds
+            key: password
+    sidecars:
+    - name: dind
+      image: docker:17.10-dind
+      securityContext:
+        privileged: true
+      # mirrorVolumeMounts will mount the same volumes specified in the main container
+      # to the sidecar (including artifacts), at the same mountPaths. This enables
+      # dind daemon to (partially) see the same filesystem as the main container in
+      # order to use features such as docker volume binding.
+      mirrorVolumeMounts: true
     name: build
   - container:
       command:
-      - /bin/bash
+      - sh
       - -c
       - 'sha=`git log -n 1 --pretty=format:"%H"` && helm upgrade flask-app ./helm-charts/flask-app --set image=docker.io/raddaoui/flask-app:$sha'
       - 2>&1
-      image: docker.io/raddaoui/raddaoui-cicd:latest
+      image: docker.io/raddaoui/raddaoui-cicd:5.0
       volumeMounts:
       - mountPath: /mnt/test-data-volume
         name: argo-test-volume
@@ -72,5 +95,5 @@ spec:
           template: clean
   - name: clean
     container:
-      image: docker.io/raddaoui/raddaoui-cicd:latest
+      image: docker.io/raddaoui/raddaoui-cicd:5.0
       command: ["bash", "-c", "echo 'cleaning resources'"]
